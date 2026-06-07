@@ -1,0 +1,17 @@
+# Sirlar va sozlamalar
+.env
+
+# Telethon sessiyasi (akkaunt kiriti — hech qachon commit qilmang!)
+shohrux_session*
+*.session
+*.session-journal
+
+# Ma'lumotlar bazasi va yuklangan rasmlar
+shohrux.db
+media/
+
+# Python
+__pycache__/
+*.pyc
+.venv/
+venv/
