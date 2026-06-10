@@ -66,10 +66,24 @@ async def process(post: dict) -> dict | None:
     """
     text = post.get("text", "")
     image_path = post.get("image_path")
+    media_type = post.get("media_type")
 
-    # 1. Baholash + qayta yozish (rasm bo'lsa biriktiramiz)
+    # AI uchun media izohi
+    if media_type == "photo":
+        media_note = "Postga rasm biriktirilgan — uning mazmunini ham hisobga ol."
+    elif media_type == "video":
+        media_note = "Postga video biriktirilgan (uning bir lavhasi/tasviri berilgan)."
+    elif media_type == "animation":
+        media_note = "Postga GIF/animatsiya biriktirilgan."
+    elif media_type == "document":
+        media_note = ("Postga FAYL biriktirilgan (kitob/hujjat). Postda buni tabiiy "
+                      "eslatib o'tishing mumkin (masalan: faylni quyida olishingiz mumkin).")
+    else:
+        media_note = "Postda media yo'q."
+
+    # 1. Baholash + qayta yozish (rasm/thumbnail bo'lsa biriktiramiz)
     persona_text = await persona.get_persona()
-    parts: list = [persona.filter_and_rewrite_prompt(persona_text, text, bool(image_path))]
+    parts: list = [persona.filter_and_rewrite_prompt(persona_text, text, media_note)]
     if image_path:
         img = _read_image_part(image_path)
         if img:
@@ -100,5 +114,8 @@ async def process(post: dict) -> dict | None:
         "title": (data.get("title") or "").strip(),
         "post": new_post,
         "image_path": image_path,
+        "media_path": post.get("media_path"),
+        "media_type": post.get("media_type"),
+        "media_name": post.get("media_name"),
         "source": post["channel"],
     }

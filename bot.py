@@ -8,6 +8,7 @@ Tasdiqlasangiz — TARGET_CHANNEL ga chiqaradi.
 from __future__ import annotations
 
 import logging
+import os
 from aiogram import Bot, Dispatcher, F, Router
 from aiogram.client.default import DefaultBotProperties
 from aiogram.enums import ParseMode
@@ -32,7 +33,18 @@ dp = Dispatcher(storage=MemoryStorage())
 router = Router()
 dp.include_router(router)
 
-CAPTION_LIMIT = 1024  # Telegram rasm izohining maksimal uzunligi
+CAPTION_LIMIT = 1024  # Telegram rasm/video izohining maksimal uzunligi
+BOT_MAX_BYTES = 49 * 1024 * 1024  # Bot orqali yuborish limiti (~50MB); kattasi Telethon orqali
+
+# Katta fayllarni (video/kitob) kanalga joylash uchun Telethon mijozi.
+# main.py ishga tushganda set_telethon() orqali ulanadi.
+_tele = None
+
+
+def set_telethon(client) -> None:
+    """main.py dan Telethon mijozini ulaydi (katta fayllarni yuborish uchun)."""
+    global _tele
+    _tele = client
 
 
 class Form(StatesGroup):
@@ -188,7 +200,7 @@ async def on_approve(cq: CallbackQuery):
         return
 
     try:
-        await publish(item["post_text"], item.get("media_path"))
+        await publish(item["post_text"], item.get("media_path"), item.get("media_type"))
         await db.add_published(item.get("topic") or "", item.get("title") or "")
         await db.del_pending(pid)
         await cq.message.edit_reply_markup(reply_markup=None)
@@ -211,18 +223,55 @@ async def on_reject(cq: CallbackQuery):
 
 
 # ---------------- Yordamchi funksiyalar ----------------
-async def publish(text: str, media_path: str | None) -> None:
-    """Tayyor postni maqsad kanalga chiqaradi."""
-    if media_path:
-        photo = FSInputFile(media_path)
-        if len(text) <= CAPTION_LIMIT:
-            await bot.send_photo(config.TARGET_CHANNEL, photo, caption=text)
-        else:
-            # Matn uzun bo'lsa: avval rasm, keyin matn alohida
-            await bot.send_photo(config.TARGET_CHANNEL, photo)
-            await bot.send_message(config.TARGET_CHANNEL, text)
+def _file_size(path: str | None) -> int:
+    try:
+        return os.path.getsize(path) if path else 0
+    except OSError:
+        return 0
+
+
+async def _send_media_bot(chat_id, media_path: str, media_type: str | None,
+                          caption: str | None = None, reply_markup=None):
+    """Media turiga qarab BOT orqali yuboradi (rasm/video/gif/fayl, <=50MB)."""
+    f = FSInputFile(media_path)
+    if media_type == "video":
+        return await bot.send_video(chat_id, f, caption=caption, reply_markup=reply_markup)
+    if media_type == "animation":
+        return await bot.send_animation(chat_id, f, caption=caption, reply_markup=reply_markup)
+    if media_type == "document":
+        return await bot.send_document(chat_id, f, caption=caption, reply_markup=reply_markup)
+    return await bot.send_photo(chat_id, f, caption=caption, reply_markup=reply_markup)
+
+
+async def _send_media_telethon(chat_id, media_path: str, caption: str | None):
+    """Katta fayllarni Telethon (user akkaunt) orqali yuboradi — 2GB gacha."""
+    if _tele is None:
+        raise RuntimeError("Katta fayl uchun Telethon ulanmagan")
+    await _tele.send_file(chat_id, media_path, caption=caption or "", parse_mode="html")
+
+
+async def publish(text: str, media_path: str | None, media_type: str | None) -> None:
+    """Tayyor postni maqsad kanalga chiqaradi (media bo'lsa u bilan birga)."""
+    target = config.TARGET_CHANNEL
+    if not media_path:
+        await bot.send_message(target, text)
+        return
+
+    big = _file_size(media_path) > BOT_MAX_BYTES
+    caption = text if len(text) <= CAPTION_LIMIT else None
+
+    if big and _tele is not None:
+        # Katta fayl -> Telethon orqali
+        await _send_media_telethon(target, media_path, caption)
     else:
-        await bot.send_message(config.TARGET_CHANNEL, text)
+        if caption is not None:
+            await _send_media_bot(target, media_path, media_type, caption=caption)
+        else:
+            await _send_media_bot(target, media_path, media_type)
+
+    # Matn uzun bo'lib caption sig'masa, qolganini alohida yuboramiz
+    if caption is None:
+        await bot.send_message(target, text)
 
 
 async def send_for_approval(post: dict) -> None:
@@ -231,22 +280,29 @@ async def send_for_approval(post: dict) -> None:
         "topic": post.get("topic"),
         "title": post.get("title"),
         "post_text": post["post"],
-        "media_path": post.get("image_path"),
+        "media_path": post.get("media_path"),
+        "media_type": post.get("media_type"),
         "source": post.get("source"),
     })
 
-    body = post["post"]
-    preview = body
-
-    media_path = post.get("image_path")
+    preview = post["post"]
+    media_path = post.get("media_path")
+    media_type = post.get("media_type")
     kb = _approval_kb(pid)
+
+    # Bot orqali ko'rsata olamizmi? (kichik fayl bo'lsa)
+    can_preview = media_path and _file_size(media_path) <= BOT_MAX_BYTES
+
     try:
-        if media_path and len(preview) <= CAPTION_LIMIT:
-            await bot.send_photo(config.ADMIN_ID, FSInputFile(media_path),
-                                 caption=preview, reply_markup=kb)
+        if can_preview and len(preview) <= CAPTION_LIMIT:
+            await _send_media_bot(config.ADMIN_ID, media_path, media_type,
+                                  caption=preview, reply_markup=kb)
         else:
-            if media_path:
-                await bot.send_photo(config.ADMIN_ID, FSInputFile(media_path))
+            if can_preview:
+                await _send_media_bot(config.ADMIN_ID, media_path, media_type)
+            elif media_path:
+                # Katta fayl — preview'da ko'rsatmaymiz, faqat eslatamiz
+                preview += "\n\n📎 <i>(Katta media biriktirilgan — tasdiqlasangiz kanalga chiqadi)</i>"
             await bot.send_message(config.ADMIN_ID, preview, reply_markup=kb)
     except Exception:
         log.exception("Adminga yuborishda xato")

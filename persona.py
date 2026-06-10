@@ -63,7 +63,10 @@ TELEGRAM KANAL POSTI QOIDALARI:
 - Matn HTML formatda: faqat <b>, <i>, <u>, <a href=""> teglari ishlatilsin.
 - Optimal uzunlik: 100-900 belgi. Juda uzun "devor" matn yozma.
 - Mantiqiy xatboshilar, o'qishga qulay tuzilish.
-- Manba havolasi yoki shaxsiy reklama QO'SHMA (kerak bo'lsa keyin o'zimiz qo'shamiz).
+- HAVOLALAR: asl postdagi FOYDALI havolalarni (yuklab olish, kitob/manba/rasmiy
+  resurs havolasi) AYNAN saqlab qol va <a href="URL">tushunarli matn</a> ko'rinishida ber.
+- Lekin REKLAMA/spam havolalarni OLIB TASHLA: "kanalga obuna bo'l", referral/havola
+  almashish, reklama uchun bog'lanish, boshqa kanal reklamasi, sotuv havolalari.
 - Hashtaglar albatta bo'lsin ideal bir nechta qilaverasna bu shu mavzuga oid boshqa xabarlarni topishga yordam beradi
 """
 
@@ -87,19 +90,16 @@ async def reset_persona() -> None:
 # ============================================================
 #  AI ko'rsatmalari (prompt) — persona matnini parametr oladi
 # ============================================================
-def filter_and_rewrite_prompt(persona_text: str, source_text: str, has_image: bool) -> str:
+def filter_and_rewrite_prompt(persona_text: str, source_text: str, media_note: str) -> str:
     """
     Bitta chaqiruvda: postni baholash (reklama/arziydimi) + Shohrux tilida
     qayta yozish. Natija JSON ko'rinishida qaytadi.
+    media_note: postga biriktirilgan media haqida qisqa izoh (AI uchun).
     """
-    img_note = (
-        "Postga rasm biriktirilgan — uning mazmunini ham hisobga ol."
-        if has_image else "Postda rasm yo'q."
-    )
     return f"""{persona_text}
 
 VAZIFANG:
-Quyida boshqa Telegram kanaldan olingan post matni berilgan. {img_note}
+Quyida boshqa Telegram kanaldan olingan post matni berilgan. {media_note}
 Uni tahlil qil va QAT'IY quyidagi JSON formatda javob ber (boshqa hech narsa yozma):
 
 {{

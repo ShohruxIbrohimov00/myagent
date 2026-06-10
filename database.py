@@ -37,6 +37,7 @@ CREATE TABLE IF NOT EXISTS pending (
     title       TEXT,
     post_text   TEXT NOT NULL,
     media_path  TEXT,
+    media_type  TEXT,
     source      TEXT,
     ts          INTEGER NOT NULL
 );
@@ -57,6 +58,10 @@ def _connect() -> sqlite3.Connection:
 def _init_sync() -> None:
     with _connect() as conn:
         conn.executescript(_SCHEMA)
+        # Migratsiya: eski bazada media_type ustuni bo'lmasa qo'shamiz
+        cols = [r["name"] for r in conn.execute("PRAGMA table_info(pending)").fetchall()]
+        if "media_type" not in cols:
+            conn.execute("ALTER TABLE pending ADD COLUMN media_type TEXT")
 
 
 async def init() -> None:
@@ -118,10 +123,10 @@ async def add_published(topic: str, title: str) -> None:
 def _add_pending_sync(d: dict) -> int:
     with _connect() as conn:
         cur = conn.execute(
-            "INSERT INTO pending (topic, title, post_text, media_path, source, ts)"
-            " VALUES (?,?,?,?,?,?)",
+            "INSERT INTO pending (topic, title, post_text, media_path, media_type, source, ts)"
+            " VALUES (?,?,?,?,?,?,?)",
             (d.get("topic"), d.get("title"), d["post_text"],
-             d.get("media_path"), d.get("source"), int(time.time())),
+             d.get("media_path"), d.get("media_type"), d.get("source"), int(time.time())),
         )
         return cur.lastrowid
 

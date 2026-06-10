@@ -51,6 +51,9 @@ async def main() -> None:
     reader = SourceReader(on_post=handle_new_post)
     await reader.start()
 
+    # Katta fayllarni (video/kitob) kanalga joylash uchun botга Telethon mijozini beramiz
+    admin_bot.set_telethon(reader.client)
+
     log.info("Shohrux ishga tushdi. Admin bot va manba kuzatuvi faol.")
     await admin_bot.notify_admin("🚀 Shohrux ishga tushdi va kanallarni kuzatyapti.")
 
