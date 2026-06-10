@@ -33,7 +33,7 @@ SOURCE_CHANNELS = _list("SOURCE_CHANNELS")
 
 # --- Gemini ---
 GEMINI_API_KEYS = _list("GEMINI_API_KEYS")
-GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash").strip()
+GEMINI_MODEL = os.getenv("GEMINI_MODEL", "gemini-1.5-flash-latest").strip()
 
 # --- Boshqa ---
 POLL_INTERVAL = int(os.getenv("POLL_INTERVAL", "120"))

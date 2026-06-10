@@ -61,10 +61,10 @@ TELEGRAM_RULES = """
 TELEGRAM KANAL POSTI QOIDALARI:
 - Kuchli, qiziqtiradigan birinchi qator (sarlavha kabi). Kerak bo'lsa <b>qalin</b>.
 - Matn HTML formatda: faqat <b>, <i>, <u>, <a href=""> teglari ishlatilsin.
-- Optimal uzunlik: 400-900 belgi. Juda uzun "devor" matn yozma.
+- Optimal uzunlik: 100-900 belgi. Juda uzun "devor" matn yozma.
 - Mantiqiy xatboshilar, o'qishga qulay tuzilish.
 - Manba havolasi yoki shaxsiy reklama QO'SHMA (kerak bo'lsa keyin o'zimiz qo'shamiz).
-- Hashtag kerak bo'lsa oxirida 1-3 ta mavzuga oid.
+- Hashtaglar albatta bo'lsin ideal bir nechta qilaverasna bu shu mavzuga oid boshqa xabarlarni topishga yordam beradi
 """
 
 

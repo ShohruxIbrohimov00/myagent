@@ -235,9 +235,8 @@ async def send_for_approval(post: dict) -> None:
         "source": post.get("source"),
     })
 
-    header = f"🆕 <b>Yangi post</b> (manba: {post.get('source','—')})\n\n"
     body = post["post"]
-    preview = header + body
+    preview = body
 
     media_path = post.get("image_path")
     kb = _approval_kb(pid)

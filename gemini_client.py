@@ -89,7 +89,10 @@ class GeminiClient:
         """Bitta kalit bilan haqiqiy chaqiruv (alohida thread'da, bloklamaslik uchun)."""
         def _sync() -> str:
             genai.configure(api_key=self._keys[idx])
+            
+            # Model nomini o'zgaruvchidan to'g'ridan-to'g'ri olamiz
             model = genai.GenerativeModel(self._model_name)
+            
             resp = model.generate_content(
                 parts,
                 generation_config={"temperature": temperature},
