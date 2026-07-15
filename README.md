@@ -60,4 +60,4 @@ Shaxsiyat endi **kodda emas, bazada** saqlanadi va botning o'zidan turib o'zgart
 - **♻️ Standartga qaytarish** → tayyor standart shaxsiyatga qaytadi
 
 Standart shaxsiyat `persona.py` ichidagi `DEFAULT_PERSONA` da yozilgan — birinchi
-ishga tushganda shu ishlaydi, keyin panelдан xohlagancha o'zgartirasiz.
+ishga tushganda shu ishlaydi, keyin paneldан xohlagancha o'zgartirasiz.
